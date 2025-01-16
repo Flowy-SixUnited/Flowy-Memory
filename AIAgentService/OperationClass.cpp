@@ -224,6 +224,11 @@ bool OperationClass::ConnectDB()
 	pConn->isShortConnect = true;//短连接
 	bool res = pConn->connect(dBInfo);
 	if (res) {
+		//创建数据库
+		dBInfo->dbName = L"aiagent_memory";
+		//pConn->close();
+		pConn->create(dBInfo);
+		pConn->connect(dBInfo);
 		//创建用户记忆列表用于保存记忆数据和时间
 		CString sql = L"CREATE TABLE IF NOT EXISTS userList (\
 ID SERIAL PRIMARY KEY,\
