@@ -1,25 +1,27 @@
 #include "OperationClass.h"
+#include <iomanip>
 #include <thread>
 #include <boost/asio.hpp>
 #include <boost/beast.hpp>
 #include <boost/beast/ssl.hpp>
 #include <boost/asio/ssl.hpp>
 #include <boost/locale.hpp>
-#include <iostream>
-#include <string>
-#include <iomanip>
-#include <afx.h>
+//#include <afx.h>
 #include <fstream>
 #include <codecvt>
-#include "include/json/json.h"
-#include "include/json/reader.h"
+#include "json.h"
+#include "reader.h"
 #include <locale>
 #include <csignal>
 #include <iostream>
 #include <stdexcept>
 #define TAB_SPACE "    "
 #define NEW_LINE  "\r\n"
-#pragma comment(lib,"..\\x64\\Debug\\jsoncpp.lib") 
+#pragma comment(lib,"jsoncpp.lib") 
+#pragma comment(lib,"libcrypto.lib") 
+#pragma comment(lib,"libssl.lib") 
+#pragma comment(lib,"dbproxy.lib") 
+#pragma comment(lib,"libboost_locale-vc143-mt-gd-x64-1_87.lib") 
 
 namespace beast = boost::beast;     // Boost.Beast 命名空间
 namespace http = beast::http;      // HTTP 协议
@@ -29,141 +31,6 @@ namespace ssl = net::ssl;          // SSL
 using tcp = boost::asio::ip::tcp;  // 短名称
 
 
-#define IsHexNum(c) ((c >= '0' && c <= '9') || (c >= 'A' && c <= 'F') || (c >= 'a' && c <= 'f'))
-
-//信号处理函数
-void signalHandler(int signal) {
-	if (signal == SIGSEGV) {
-		throw std::runtime_error("Memory access violation (SIGSEGV) occurred!");
-	}
-}
-std::string getLevelStr(int level)
-{
-	std::string levelStr = "";
-	for (int i = 0; i < level; i++)
-	{
-		levelStr += TAB_SPACE;
-	}
-	return levelStr;
-}
-std::string formatJson(char* input) {
-	std::string result = "";
-	std::string inputData = input;
-	int level = 0;
-
-	//inputData = CT2A(input.GetString());
-
-	for (std::string::size_type index = 0; index < inputData.size(); index++)
-	{
-		char c = inputData[index];
-
-		if (level > 0 && '\r\n' == inputData[inputData.size() - 1])
-		{
-			result += getLevelStr(level);
-		}
-
-		switch (c)
-		{
-		case '{':
-		case '[':
-			result = result + c + NEW_LINE;
-			level++;
-			result += getLevelStr(level);
-			break;
-		case ',':
-			result = result + c;
-
-			// 判断是否是inputData的逗号
-			if ((inputData[index - 1] == '"') || (inputData[index + 1] == '"')) {
-				result = result + NEW_LINE;
-				result += getLevelStr(level);
-			}
-
-			break;
-		case '}':
-		case ']':
-			result += NEW_LINE;
-			level--;
-			result += getLevelStr(level);
-			result += c;
-			break;
-		default:
-			// 回车键
-			if (c == '\r') {
-			}
-			else {
-				result += c;
-			}
-			break;
-		}
-
-	}
-
-	// 输出
-
-	return result;
-}
-char* OperationClass::Utf8ToStringT(LPSTR str)
-{
-	_ASSERT(str);
-	USES_CONVERSION;
-	WCHAR* buf;
-	int length = MultiByteToWideChar(CP_UTF8, 0, str, -1, NULL, 0);
-	buf = new WCHAR[length];
-	ZeroMemory(buf, (length) * sizeof(WCHAR));
-	MultiByteToWideChar(CP_UTF8, 0, str, -1, buf, length);
-
-	char* data = NULL;
-	std::string recData = formatJson(W2A(buf));
-	delete[]buf;
-	buf = NULL;
-	char* new_cstr = new char[recData.length() + 1]; // 为非常量字符数组分配空间
-	std::strcpy(new_cstr, recData.c_str()); // 复制内容
-	data = new_cstr;
-	delete[]str;
-	str = NULL;
-	return data;
-}
-char* OperationClass::URLDecode(const char* _url)
-{
-	_ASSERT(_url);
-	USES_CONVERSION;
-	// 获取 UTF-8 字符串的长度
-	int wideSize = MultiByteToWideChar(CP_UTF8, 0, _url, -1, nullptr, 0);
-	if (wideSize > 0) {
-		// 申请宽字符缓冲区
-		wchar_t* wideStr = new wchar_t[wideSize];
-		// 转换为宽字符
-		MultiByteToWideChar(CP_UTF8, 0, _url, -1, wideStr, wideSize);
-		delete[] wideStr;
-		wideStr = NULL;
-	}
-
-	int i = 0;
-	int length = (int)strlen(_url) + 1;
-	CHAR* buf = new CHAR[length];
-	ZeroMemory(buf, length);
-	LPSTR p = buf;
-	char tmp[4];
-	while (i < length)
-	{
-		if (i <= length - 3 && _url[i] == '%' && IsHexNum(_url[i + 1]) && IsHexNum(_url[i + 2]))
-		{
-			memset(tmp, 0, sizeof(tmp));
-			memcpy(tmp, _url + i + 1, 2);
-			sscanf(tmp, "%x", p++);
-			i += 3;
-		}
-		else
-		{
-			*(p++) = _url[i];
-			i++;
-		}
-	}
-
-	//return CString(buf);
-	return Utf8ToStringT(buf);
-}
 //获取当前的程序执行路径
 std::string OperationClass::GetExecutablePath()
 {
@@ -176,6 +43,23 @@ std::string OperationClass::GetExecutableDirectory()
 {
 	std::string exePath = GetExecutablePath();
 	return exePath.substr(0, exePath.find_last_of("\\/"));
+}
+#define IsHexNum(c) ((c >= '0' && c <= '9') || (c >= 'A' && c <= 'F') || (c >= 'a' && c <= 'f'))
+
+//信号处理函数
+void signalHandler(int signal) {
+	/*if (signal == SIGSEGV) {
+		throw std::runtime_error("Memory access violation (SIGSEGV) occurred!");
+	}*/
+}
+std::string getLevelStr(int level)
+{
+	std::string levelStr = "";
+	for (int i = 0; i < level; i++)
+	{
+		levelStr += TAB_SPACE;
+	}
+	return levelStr;
 }
 //加载账户信息
 void OperationClass::loadConfig() {
@@ -238,6 +122,7 @@ addCode INT DEFAULT 0,\
 datatime TIMESTAMP  DEFAULT NULL); ";
 		pConn->execUpdate(sql.GetBuffer(0));
 	}
+	//httpTasks();
 	//打开数据交互网络端口
 	std::thread worker(std::bind(&OperationClass::httpTasks, this));
 	std::this_thread::sleep_for(std::chrono::seconds(5));
@@ -533,8 +418,8 @@ void removeSpacesAndNewlines(std::string& str) {
 }
 //解析json数据，并执行对应的指令
 void getJsonInfo(CConnProxyIfc* pConn, std::string jsonData, std::string& recData) {
-	std::signal(SIGSEGV, signalHandler);
 	try {
+		std::signal(SIGSEGV, signalHandler);
 
 		Json::Value jsonDataValue;
 		Json::Value searchjsonData;

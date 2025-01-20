@@ -1,29 +1,18 @@
 #pragma once
-#include <string>
 #include <afx.h>
+#include <string>
 #include "..\dbproxy\ConnProxyIfc.h"
 #include "..\dbproxy\DBInfo.h"
-#include "include\json\value.h"
-#include "include\json\reader.h"
-#pragma comment(lib, "..\\x64\\Release\\dbproxy.lib")
-#pragma comment(lib,"..\\x64\\Release\\jsoncpp.lib") 
+
 class OperationClass
 {
 public:
-	char* Utf8ToStringT(LPSTR str);
-	char* URLDecode(const char* _url);
-	std::string GetExecutablePath();
-	std::string GetExecutableDirectory();
-	//新增PostgreSQL数据库
-	void loadConfig();
-	//static CDeepseekComminuteApp deepseekCominute;
-	//初始化数据库
+    void loadConfig();
 	bool ConnectDB();
-	//关闭数据库连接
-	void closeDB();
-	BYTE* convertToByte(std::string content, int& len);
 	void httpTasks();
-	// 重写
+	void closeDB();
+    std::string GetExecutablePath();
+    std::string GetExecutableDirectory();
 public:
 	char dbType;		//数据库类型 0:access 1:mssql 2:mysql 3:EXCEL 4:PSQL
 	CString serverName;	//数据库服务器IP或主机名
@@ -48,6 +37,6 @@ public:
 	CConnProxyIfc* pConn;
 	//afx_msg void insertRecord(Json::Value jsonDataValue);
 	CDBInfo* dBInfo;
-	//BYTE* convertToByte(std::string content, int& len);
+	BYTE* convertToByte(std::string content, int& len);
 };
 
